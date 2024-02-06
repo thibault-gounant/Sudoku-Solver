@@ -1,12 +1,15 @@
 #include <SFML/Graphics.hpp>
 
-#include <iostream>
-
-#define WIDTH 800
-#define HEIGHT 600
+#include "core.h"
+#include "utils.h"
 
 
 int main(int argc, char* argv[]) {
+
+    if (argc != 3) {
+        print_usage(argv);
+        return EXIT_FAILURE;
+    }
 
     sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Sudoku Solver");
 
