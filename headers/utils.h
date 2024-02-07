@@ -36,6 +36,7 @@ void read(Sudoku& sudoku, char* filename);
 void write(Sudoku& sudoku, char* filename);
 
 bool is_valid(Sudoku& sudoku);
+bool is_solved(Sudoku& sudoku);
 bool is_equal(Sudoku& a, Sudoku& b);
 
 #endif

@@ -48,4 +48,6 @@ public:
     void restore();
 };
 
+void solve(Sudoku &sudoku);
+
 #endif

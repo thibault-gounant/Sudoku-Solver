@@ -112,6 +112,32 @@ bool is_valid(Sudoku& sudoku) {
     return valid;
 }
 
+bool is_solved(Sudoku& sudoku) {
+
+    std::array<std::bitset<VALUES>, ROWS> rows{};
+    std::array<std::bitset<VALUES>, COLUMNS> cols{};
+    std::array<std::bitset<VALUES>, ROWS_BOXES * COLUMNS_BOXES> boxes{};
+
+    bool solved = true;
+
+    for (int row = 0; row < ROWS && solved; row++) {
+        for (int col = 0; col < COLUMNS && solved; col++) {
+            int val = sudoku.get(row, col);
+
+            solved = val > 0 &&
+                     !rows[row].test(val - 1) &&
+                     !cols[col].test(val - 1) &&
+                     !boxes[box(row, col)].test(val - 1);
+
+            rows[row].set(val - 1);
+            cols[col].set(val - 1);
+            boxes[box(row, col)].set(val - 1);
+        }
+    }
+
+    return solved;
+}
+
 bool is_equal(Sudoku& a, Sudoku& b) {
 
     bool equal = true;

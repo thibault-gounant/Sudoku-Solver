@@ -11,6 +11,11 @@ static void test_runner(char* input, char* output) {
     bool valid = is_valid(sudoku);
     print_test_result(valid, "Read input\n");
 
+    solve(sudoku);
+
+    bool solved = is_solved(sudoku);
+    print_test_result(solved, "Sudoku solved\n");
+
     write(sudoku, output);
 
     Sudoku result;
@@ -19,7 +24,7 @@ static void test_runner(char* input, char* output) {
     bool equal = is_equal(sudoku, result);
     print_test_result(equal, "Write output\n");
 
-    assert(valid && equal);
+    assert(valid && solved && equal);
 }
 
 int main(int argc, char *argv[]) {
