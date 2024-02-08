@@ -22,6 +22,14 @@ struct State;
 
 using Cell = std::pair<int, int>;
 
+template <typename T>
+struct Optional {
+    T value;
+    bool has_value;
+    Optional() : value(), has_value(false)  {}
+    Optional(const T& val) : value(val), has_value(true) {}
+};
+
 void print_usage(char *argv[]);
 void print_test_result(const bool result, const char message[]);
 

@@ -1,18 +1,25 @@
 #include "core.h"
 
-static std::vector<Cell> remaining_cells(Sudoku &sudoku) {
+static Optional<Cell> minimum_remaining_value(Sudoku& sudoku, std::vector<Cell>& cache) {
 
-    std::vector<Cell> cells;
+    int minimum = VALUES + 1;
+    int index = -1;
 
-    for (int row = 0; row < ROWS; ++row) {
-        for (int col = 0; col < COLUMNS; ++col) {
-            if (sudoku.get(row, col) == 0) {
-                cells.emplace_back(row, col);
-            }
+    for (int i = 0; i < cache.size(); ++i) {
+        int count = sudoku.values(cache[i].first, cache[i].second).count();
+        if (count > 0 && count < minimum) {
+            minimum = count;
+            index = i;
         }
     }
 
-    return cells;
+    Optional<Cell> result;
+    if (index > -1) {
+        result = Optional<Cell>(cache[index]);
+        cache.erase(cache.begin() + index);
+    }
+
+    return result;
 }
 
 static std::vector<int> available_values(Sudoku &sudoku, int row, int col) {
@@ -33,15 +40,13 @@ static std::vector<int> available_values(Sudoku &sudoku, int row, int col) {
 
 static bool backtracking(Sudoku &sudoku, std::vector<Cell> cache) {
 
-    bool solved = cache.empty();
+    Optional<Cell> cell = minimum_remaining_value(sudoku, cache);
+    bool solved = cache.empty() && !cell.has_value;
 
     if (!solved) {
 
-        Cell current = cache.back();
-        cache.pop_back();
-
-        const int row = current.first;
-        const int col = current.second;
+        const int row = cell.value.first;
+        const int col = cell.value.second;
 
         std::vector<int> values = available_values(sudoku, row, col);
 
@@ -62,5 +67,15 @@ static bool backtracking(Sudoku &sudoku, std::vector<Cell> cache) {
 }
 
 void solve(Sudoku &sudoku) {
-    backtracking(sudoku, remaining_cells(sudoku));
+
+    std::vector<Cell> remaining_cells;
+    for (int row = 0; row < ROWS; ++row) {
+        for (int col = 0; col < COLUMNS; ++col) {
+            if (sudoku.get(row, col) == 0) {
+                remaining_cells.emplace_back(row, col);
+            }
+        }
+    }
+
+    backtracking(sudoku, remaining_cells);
 }
