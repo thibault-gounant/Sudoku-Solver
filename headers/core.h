@@ -46,6 +46,10 @@ public:
 
     void store(int row, int col);
     void restore();
+
+    int get_row_remaining(int row) const { return rows_remaining[row]; }
+    int get_col_remaining(int col) const { return cols_remaining[col]; }
+    int get_box_remaining(int box) const { return boxes_remaining[box]; }
 };
 
 void solve(Sudoku &sudoku);
