@@ -1,4 +1,7 @@
 #include "core.h"
+#include "utils.h"
+
+#include <algorithm>
 
 static Optional<Cell> next_cell(Sudoku& sudoku, std::vector<Cell>& cache) {
 
@@ -8,11 +11,10 @@ static Optional<Cell> next_cell(Sudoku& sudoku, std::vector<Cell>& cache) {
 
     for (int index = 0; index < cache.size(); ++index) {
 
-        const int row = cache[index].first;
-        const int col = cache[index].second;
+        auto [row, col] = cache[index];
 
         const int remaining_values = sudoku.values(row, col).count();
-        const int degree = sudoku.get_row_remaining(row) + sudoku.get_col_remaining(col) + sudoku.get_box_remaining(box(row, col));
+        const int degree = sudoku.remaining_values(row, col);
 
         if (remaining_values > 0 && (remaining_values < minimum_remaining_values || (remaining_values == minimum_remaining_values && degree > highest_degree))) {
             minimum_remaining_values = remaining_values;
@@ -30,31 +32,43 @@ static Optional<Cell> next_cell(Sudoku& sudoku, std::vector<Cell>& cache) {
     return cell;
 }
 
-static std::vector<int> available_values(Sudoku &sudoku, int row, int col) {
+static std::vector<int> available_values(Sudoku &sudoku, const int row, const int col) {
 
-    std::bitset<VALUES> possibilities = sudoku.values(row, col);
+    const std::bitset<VALUES> possibilities = sudoku.values(row, col);
 
-    std::vector<int> values;
-    values.reserve(possibilities.count());
+    std::vector<int> least_constraining_values;
+    least_constraining_values.reserve(possibilities.count());
 
     for (int value = 1; value <= VALUES; ++value) {
         if (possibilities.test(value - 1)) {
-            values.emplace_back(value);
+            least_constraining_values.emplace_back(value);
         }
     }
 
-    return values;
+    auto constraints = [&](const int value) {
+        sudoku.store(row, col);
+        sudoku.set(row, col, value);
+        const int score = sudoku.constraining_values(row, col);
+        sudoku.restore();
+        return score;
+    };
+
+    std::sort(least_constraining_values.begin(), least_constraining_values.end(), [&](const int a, const int b) {
+        return constraints(a) < constraints(b);
+    });
+
+    return least_constraining_values;
 }
 
 static bool backtracking(Sudoku &sudoku, std::vector<Cell> cache) {
 
     Optional<Cell> cell = next_cell(sudoku, cache);
+
     bool solved = cache.empty() && !cell.has_value;
 
     if (!solved) {
 
-        const int row = cell.value.first;
-        const int col = cell.value.second;
+        auto [row, col] = cell.value;
 
         std::vector<int> values = available_values(sudoku, row, col);
 

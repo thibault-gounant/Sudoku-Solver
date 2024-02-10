@@ -1,38 +1,38 @@
-#include <fstream>
-
 #include "core.h"
+
+#include <fstream>
 
 void print_usage(char *argv[]) {
     fprintf(stderr, "Usage: %s <input filename> <output filename>\n", argv[0]);
 }
 
-void print_test_result(const bool result, const char message[]) {
+void print_test_result(const bool result, const std::string message) {
     result ?
-    fprintf(stdout, "\033[0;32m✅ PASS\033[0m\t%s", message) :
-    fprintf(stderr, "\033[1;31m❌ FAIL\033[0m\t%s", message);
+    fprintf(stdout, "\033[0;32m✅ PASS\033[0m\t%s", message.c_str()) :
+    fprintf(stderr, "\033[1;31m❌ FAIL\033[0m\t%s", message.c_str());
 }
 
-int row(int index) {
+int row(const int index) {
     return index / COLUMNS;
 }
 
-int col(int index) {
+int col(const int index) {
     return index % COLUMNS;
 }
 
-int index(int row, int col) {
+int index(const int row, const int col) {
     return row * COLUMNS + col;
 }
 
-int box(int row, int col) {
+int box(const int row, const int col) {
     return (row / ROWS_BOXES) * COLUMNS / COLUMNS_BOXES + (col / COLUMNS_BOXES);
 }
 
-void read(Sudoku& sudoku, char* filename) {
+void read(Sudoku& sudoku, const std::string filename) {
 
     std::ifstream file(filename);
     if (file.fail()) {
-        throw std::runtime_error("Failed to open file: " + std::string(filename));
+        throw std::runtime_error("Failed to open file: " + filename);
     }
 
     char c;
@@ -48,11 +48,11 @@ void read(Sudoku& sudoku, char* filename) {
     file.close();
 }
 
-void write(Sudoku& sudoku, char* filename) {
+void write(Sudoku& sudoku, const std::string filename) {
 
     std::ofstream file(filename);
     if (file.fail()) {
-        throw std::runtime_error("Failed to open file: " + std::string(filename));
+        throw std::runtime_error("Failed to open file: " + filename);
     }
 
     for (int row = 0; row < ROWS; row++) {
@@ -71,82 +71,63 @@ void write(Sudoku& sudoku, char* filename) {
     file.close();
 }
 
-int find_first(std::bitset<VALUES> values) {
-
-    int value = 0;
-
-    if (values.count() == 1) {
-        for (int i = 0; i < VALUES; ++i) {
-            if (values.test(i)) {
-                return i + 1;
-            }
-        }
-    }
-
-    return value;
-}
-
 bool is_valid(Sudoku& sudoku) {
 
-    std::array<std::bitset<VALUES>, ROWS> rows{};
-    std::array<std::bitset<VALUES>, COLUMNS> cols{};
-    std::array<std::bitset<VALUES>, ROWS_BOXES * COLUMNS_BOXES> boxes{};
+    std::array<std::bitset<VALUES>, ROWS> rows = {};
+    std::array<std::bitset<VALUES>, COLUMNS> cols = {};
+    std::array<std::bitset<VALUES>, BOXES> boxes = {};
 
     bool valid = true;
-
     for (int row = 0; row < ROWS && valid; row++) {
         for (int col = 0; col < COLUMNS && valid; col++) {
-            int val = sudoku.get(row, col);
-            if (val > 0) {
-                valid = !rows[row].test(val - 1) &&
-                        !cols[col].test(val - 1) &&
-                        !boxes[box(row, col)].test(val - 1);
 
-                rows[row].set(val - 1);
-                cols[col].set(val - 1);
-                boxes[box(row, col)].set(val - 1);
+            const int value = sudoku.get(row, col);
+
+            if (value > 0) {
+                valid = !rows[row].test(value - 1) &&
+                        !cols[col].test(value - 1) &&
+                        !boxes[box(row, col)].test(value - 1);
+
+                rows[row].set(value - 1);
+                cols[col].set(value - 1);
+                boxes[box(row, col)].set(value - 1);
             }
         }
     }
-
     return valid;
 }
 
 bool is_solved(Sudoku& sudoku) {
 
-    std::array<std::bitset<VALUES>, ROWS> rows{};
-    std::array<std::bitset<VALUES>, COLUMNS> cols{};
-    std::array<std::bitset<VALUES>, ROWS_BOXES * COLUMNS_BOXES> boxes{};
+    std::array<std::bitset<VALUES>, ROWS> rows = {};
+    std::array<std::bitset<VALUES>, COLUMNS> cols = {};
+    std::array<std::bitset<VALUES>, BOXES> boxes = {};
 
     bool solved = true;
-
     for (int row = 0; row < ROWS && solved; row++) {
         for (int col = 0; col < COLUMNS && solved; col++) {
-            int val = sudoku.get(row, col);
 
-            solved = val > 0 &&
-                     !rows[row].test(val - 1) &&
-                     !cols[col].test(val - 1) &&
-                     !boxes[box(row, col)].test(val - 1);
+            const int value = sudoku.get(row, col);
 
-            rows[row].set(val - 1);
-            cols[col].set(val - 1);
-            boxes[box(row, col)].set(val - 1);
+            solved = value > 0 &&
+                     !rows[row].test(value - 1) &&
+                     !cols[col].test(value - 1) &&
+                     !boxes[box(row, col)].test(value - 1);
+
+            rows[row].set(value - 1);
+            cols[col].set(value - 1);
+            boxes[box(row, col)].set(value - 1);
         }
     }
-
     return solved;
 }
 
 bool is_equal(Sudoku& a, Sudoku& b) {
-
     bool equal = true;
-
-    for (int row = 0; row < ROWS && equal; row++) {
-        for (int col = 0; col < COLUMNS && equal; col++) {
+    for (int row = 0; row < ROWS && equal; ++row) {
+        for (int col = 0; col < COLUMNS && equal; ++col) {
             equal = a.get(row, col) == b.get(row, col);
         }
     }
-
     return equal;
 }
