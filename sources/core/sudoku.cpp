@@ -1,30 +1,47 @@
 #include "core.h"
 #include "utils.h"
 
+#include <algorithm>
+
 Sudoku::Sudoku() {
     for (int row = 0; row < ROWS; ++row) {
         for (int col = 0; col < COLUMNS; ++col) {
+
             grid[index(row, col)].set();
-            rows_remaining[row]++;
-            cols_remaining[col]++;
-            boxes_remaining[box(row, col)]++;
+
+            neighbors[index(row,col)].reserve((ROWS - 1) + (COLUMNS - 1) + (BOXES - 1) - (ROWS_BOXES - 1) - (COLUMNS_BOXES - 1));
+
+            for (int r = 0; r < ROWS; ++r) {
+                if (r != row) {
+                    neighbors[index(row, col)].emplace_back(r, col);
+                }
+            }
+
+            for (int c = 0; c < COLUMNS; ++c) {
+                if (c != col) {
+                    neighbors[index(row, col)].emplace_back(row, c);
+                }
+            }
+
+            const int br = (row / ROWS_BOXES) * ROWS_BOXES;
+            const int bc = (col / COLUMNS_BOXES) * COLUMNS_BOXES;
+
+            for (int r = 0; r < ROWS_BOXES; ++r) {
+                for (int c = 0; c < COLUMNS_BOXES; ++c) {
+                    if (br + r != row || bc + c != col) {
+                        Cell cell = Cell(br + r, bc + c);
+                        if (std::find(neighbors[index(row, col)].begin(), neighbors[index(row, col)].end(), cell) == neighbors[index(row, col)].end()) {
+                            neighbors[index(row, col)].emplace_back(cell);
+                        }
+                    }
+                }
+            }
         }
     }
 }
 
 int Sudoku::get(const int row, const int col) {
-
-    const std::bitset<VALUES> values = grid[index(row, col)];
-
-    int first_value = 0;
-    if (values.count() == 1) {
-        for (int value = 0; value < VALUES && first_value == 0; ++value) {
-            if (values.test(value)) {
-                first_value = value + 1;
-            }
-        }
-    }
-    return first_value;
+    return find_first(grid[index(row, col)]);
 }
 
 void Sudoku::set(const int row, const int col, const int value) {
@@ -34,83 +51,45 @@ void Sudoku::set(const int row, const int col, const int value) {
         rows[row].set(value - 1);
         cols[col].set(value - 1);
         boxes[box(row, col)].set(value - 1);
-        rows_remaining[row]--;
-        cols_remaining[col]--;
-        boxes_remaining[box(row, col)]--;
-        rows_constraining[row]++;
-        cols_constraining[col]++;
-        boxes_constraining[box(row, col)]++;
     }
 }
 
 void Sudoku::add(const int row, const int col, const int value) {
     if (value > 0 && value <= VALUES) {
-        store(row, col);
         grid[index(row, col)].set(value - 1);
-        rows[row].set(value - 1);
-        cols[col].set(value - 1);
-        boxes[box(row, col)].set(value - 1);
-        rows_constraining[row]++;
-        cols_constraining[col]++;
-        boxes_constraining[box(row, col)]++;
     }
 }
 
 void Sudoku::remove(const int row, const int col, const int value) {
     if (value > 0 && value <= VALUES) {
-        store(row, col);
         grid[index(row, col)].reset(value - 1);
-        rows[row].reset(value - 1);
-        cols[col].reset(value - 1);
-        boxes[box(row, col)].reset(value - 1);
-        rows_constraining[row]--;
-        cols_constraining[col]--;
-        boxes_constraining[box(row, col)]--;
     }
 }
 
-void Sudoku::store(const int row, const int col) {
+void Sudoku::store() {
     State state;
-    state.row = row;
-    state.col = col;
-    state.values = grid[index(row, col)];
-    state.row_values = rows[row];
-    state.col_values = cols[col];
-    state.box_values = boxes[box(row, col)];
-    state.row_remaining_values = rows_remaining[row];
-    state.col_remaining_values = cols_remaining[col];
-    state.box_remaining_values = boxes_remaining[box(row, col)];
-    state.row_constraining_values = rows_constraining[row];
-    state.col_constraining_values = cols_constraining[col];
-    state.box_constraining_values = boxes_constraining[box(row, col)];
+    state.grid = grid;
+    state.rows = rows;
+    state.cols = cols;
+    state.boxes = boxes;
     states.push_back(state);
 }
 
 void Sudoku::restore() {
     if (!states.empty()) {
         State state = states.back();
-        grid[index(state.row, state.col)] = state.values;
-        rows[state.row] = state.row_values;
-        cols[state.col] = state.col_values;
-        boxes[box(state.row, state.col)] = state.box_values;
-        rows_remaining[state.row] = state.row_remaining_values;
-        cols_remaining[state.col] = state.col_remaining_values;
-        boxes_remaining[box(state.row, state.col)] = state.box_remaining_values;
-        rows_constraining[state.row] = state.row_constraining_values;
-        cols_constraining[state.col] = state.col_constraining_values;
-        boxes_constraining[box(state.row, state.col)] = state.box_constraining_values;
+        grid = state.grid;
+        rows = state.rows;
+        cols = state.cols;
+        boxes = state.boxes;
         states.pop_back();
     }
 }
 
-std::bitset<VALUES> Sudoku::values(const int row, const int col) {
+const std::bitset<VALUES> Sudoku::get_values(const int row, const int col) {
     return grid[index(row, col)] & ~rows[row] & ~cols[col] & ~boxes[box(row, col)];
 }
 
-int Sudoku::remaining_values(const int row, const int col) {
-    return rows_remaining[row] + cols_remaining[col] + boxes_remaining[box(row, col)];
-}
-
-int Sudoku::constraining_values(const int row, const int col) {
-    return rows_constraining[row] + cols_constraining[col] + boxes_constraining[box(row, col)];
+const std::vector<Cell> Sudoku::get_neighbors(const int row, const int col) {
+    return neighbors[index(row, col)];
 }

@@ -3,27 +3,23 @@
 
 #include <cassert>
 
-static void test_runner(char* input, char* output) {
+static void test_runner(char* input, char* solution) {
 
-    Sudoku sudoku;
-    read(sudoku, input);
+    Sudoku actual;
+    read(actual, input);
 
-    bool valid = is_valid(sudoku);
-    print_test_result(valid, "Read input\n");
+    bool valid = is_valid(actual);
 
-    solve(sudoku);
+    solve(actual);
 
-    bool solved = is_solved(sudoku);
-    print_test_result(solved, "Sudoku solved\n");
+    bool solved = is_solved(actual);
 
-    write(sudoku, output);
+    Sudoku expected;
+    read(expected, solution);
 
-    Sudoku result;
-    read(result, output);
+    bool equal = is_equal(expected, actual);
 
-    bool equal = is_equal(sudoku, result);
-    print_test_result(equal, "Write output\n");
-
+    print_test_result(valid && solved && equal, "Sudoku solved\n");
     assert(valid && solved && equal);
 }
 

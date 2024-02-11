@@ -4,11 +4,6 @@
 #define WIDTH 800
 #define HEIGHT 600
 
-struct State;
-class Sudoku;
-
-using Cell = std::pair<int, int>;
-
 template <typename T>
 struct Optional {
     T value;
@@ -18,12 +13,14 @@ struct Optional {
 };
 
 void print_usage(char *argv[]);
-void print_test_result(bool result, std::string message);
+void print_test_result(bool result, const char* message);
 
 int row(int index);
 int col(int index);
 int index(int row, int col);
 int box(int row, int col);
+
+int find_first(std::bitset<VALUES> values);
 
 void read(Sudoku& sudoku, std::string filename);
 void write(Sudoku& sudoku, std::string filename);

@@ -12,46 +12,28 @@ constexpr int BOXES = 9;
 constexpr int ROWS_BOXES = 3;
 constexpr int COLUMNS_BOXES = 3;
 
+using Cell = std::pair<int, int>;
+
 struct State {
-
-    int row;
-    int col;
-
-    std::bitset<VALUES> values;
-    std::bitset<VALUES> row_values;
-    std::bitset<VALUES> col_values;
-    std::bitset<VALUES> box_values;
-
-    int row_remaining_values;
-    int col_remaining_values;
-    int box_remaining_values;
-
-    int row_constraining_values;
-    int col_constraining_values;
-    int box_constraining_values;
-};
-
-class Sudoku {
-
-private:
-
     std::array<std::bitset<VALUES>, ROWS * COLUMNS> grid = {};
     std::array<std::bitset<VALUES>, ROWS> rows = {};
     std::array<std::bitset<VALUES>, COLUMNS> cols = {};
     std::array<std::bitset<VALUES>, BOXES> boxes = {};
+};
 
-    std::array<int, ROWS> rows_remaining = {};
-    std::array<int, COLUMNS> cols_remaining = {};
-    std::array<int, BOXES> boxes_remaining = {};
+class Sudoku {
+private:
+    std::array<std::bitset<VALUES>, ROWS * COLUMNS> grid = {};
 
-    std::array<int, ROWS> rows_constraining = {};
-    std::array<int, COLUMNS> cols_constraining = {};
-    std::array<int, BOXES> boxes_constraining = {};
+    std::array<std::bitset<VALUES>, ROWS> rows = {};
+    std::array<std::bitset<VALUES>, COLUMNS> cols = {};
+    std::array<std::bitset<VALUES>, BOXES> boxes = {};
+
+    std::array<std::vector<Cell>, ROWS * COLUMNS> neighbors = {};
 
     std::vector<State> states;
 
 public:
-
     Sudoku();
     ~Sudoku() = default; // no dynamic memory allocation
 
@@ -63,13 +45,11 @@ public:
     void add(int row, int col, int value);
     void remove(int row, int col, int value);
 
-    void store(int row, int col);
+    void store();
     void restore();
 
-    std::bitset<VALUES> values(int row, int col);
-
-    int remaining_values(int row, int col);
-    int constraining_values(int row, int col);
+    const std::bitset<VALUES> get_values(int row, int col);
+    const std::vector<Cell> get_neighbors(int row, int col);
 };
 
 void solve(Sudoku &sudoku);
