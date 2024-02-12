@@ -2,6 +2,7 @@
 #include "utils.h"
 
 #include <algorithm>
+#include <set>
 
 Sudoku::Sudoku() {
     for (int row = 0; row < ROWS; ++row) {
@@ -11,31 +12,23 @@ Sudoku::Sudoku() {
 
             neighbors[index(row,col)].reserve((ROWS - 1) + (COLUMNS - 1) + (BOXES - 1) - (ROWS_BOXES - 1) - (COLUMNS_BOXES - 1));
 
-            for (int r = 0; r < ROWS; ++r) {
-                if (r != row) {
-                    neighbors[index(row, col)].emplace_back(r, col);
-                }
+            std::set<Cell> set;
+
+            for (const auto& cell : row_cells(row)){
+                set.insert(cell);
             }
 
-            for (int c = 0; c < COLUMNS; ++c) {
-                if (c != col) {
-                    neighbors[index(row, col)].emplace_back(row, c);
-                }
+            for (const auto& cell : col_cells(col)){
+                set.insert(cell);
             }
 
-            const int br = (row / ROWS_BOXES) * ROWS_BOXES;
-            const int bc = (col / COLUMNS_BOXES) * COLUMNS_BOXES;
-
-            for (int r = 0; r < ROWS_BOXES; ++r) {
-                for (int c = 0; c < COLUMNS_BOXES; ++c) {
-                    if (br + r != row || bc + c != col) {
-                        Cell cell = Cell(br + r, bc + c);
-                        if (std::find(neighbors[index(row, col)].begin(), neighbors[index(row, col)].end(), cell) == neighbors[index(row, col)].end()) {
-                            neighbors[index(row, col)].emplace_back(cell);
-                        }
-                    }
-                }
+            for (const auto& cell : box_cells(row, col)){
+                set.insert(cell);
             }
+
+            set.erase(Cell(row, col));
+
+            neighbors[index(row, col)].assign(set.begin(), set.end());
         }
     }
 }

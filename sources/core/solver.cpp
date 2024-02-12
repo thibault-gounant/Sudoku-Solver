@@ -4,25 +4,59 @@
 #include <algorithm>
 #include <queue>
 
-static Optional<Cell> next_cell(Sudoku& sudoku, std::vector<Cell>& cache) {
+static void check_hidden_singles(Sudoku& sudoku, const std::vector<Cell>& cells, int& nb, std::queue<Cell>& queue) {
+
+    std::array<std::vector<Cell>, VALUES> counts = {};
+
+    for (int i = 0; i < cells.size(); ++i) {
+
+        const int row = cells[i].first;
+        const int col = cells[i].second;
+
+        if (sudoku.get(row, col) == 0) {
+            for (int value = 1; value <= VALUES; ++value) {
+                if (sudoku.get_values(row, col).test(value - 1)) {
+                    counts[value - 1].emplace_back(row, col);
+                }
+            }
+        }
+    }
+
+    for (int value = 1; value <= VALUES; ++value) {
+        if (counts[value - 1].size() == 1) {
+
+            const Cell cell = counts[value - 1][0];
+            const int row = cell.first;
+            const int col = cell.second;
+
+            if (sudoku.get(row, col) == 0) {
+                ++nb;
+                sudoku.store();
+                sudoku.set(row, col, value);
+                queue.push(Cell{row, col});
+            }
+        }
+    }
+}
+
+
+static Optional<Cell> next_cell(Sudoku& sudoku, std::vector<Cell>& remaining_cells) {
 
     int minimum_remaining_values = VALUES + 1;
     int highest_degree = -1;
     int best_index = -1;
 
-    for (int index = 0; index < cache.size(); ++index) {
+    for (int index = 0; index < remaining_cells.size(); ++index) {
 
-        const int row = cache[index].first;
-        const int col = cache[index].second;
+        const int row = remaining_cells[index].first;
+        const int col = remaining_cells[index].second;
 
         const int remaining_values = sudoku.get_values(row, col).count();
 
         int degree = 0;
-        std::vector<Cell> neighbors = sudoku.get_neighbors(row, col);
-        for (const Cell neighbor : neighbors) {
-            const int r = neighbor.first;
-            const int c = neighbor.second;
-            if (sudoku.get(r, c) == 0) {
+
+        for (const Cell neighbor : sudoku.get_neighbors(row, col)) {
+            if (sudoku.get(neighbor.first, neighbor.second) == 0) {
                 degree += 1;
             }
         }
@@ -35,9 +69,10 @@ static Optional<Cell> next_cell(Sudoku& sudoku, std::vector<Cell>& cache) {
     }
 
     Optional<Cell> cell;
+
     if (best_index > -1) {
-        cell = Optional<Cell>(cache[best_index]);
-        cache.erase(cache.begin() + best_index);
+        cell = Optional<Cell>(remaining_cells[best_index]);
+        remaining_cells.erase(remaining_cells.begin() + best_index);
     }
 
     return cell;
@@ -91,7 +126,7 @@ static bool constraint_propagation(Sudoku& sudoku, const int row, const int col,
         const Cell current = queue.front();
         queue.pop();
 
-        std::vector<Cell> neighbors = sudoku.get_neighbors(current.first, current.second);
+        const std::vector<Cell> neighbors = sudoku.get_neighbors(current.first, current.second);
 
         for (int i = 0; i < neighbors.size() && consistent; ++i) {
 
@@ -107,27 +142,31 @@ static bool constraint_propagation(Sudoku& sudoku, const int row, const int col,
                 }
 
                 if (values.count() == 1) {
-                    sudoku.store();
                     ++nb;
+                    sudoku.store();
                     sudoku.set(r, c, find_first(values));
                     queue.push(Cell{r, c});
                 }
             }
+        }
+
+        if (consistent) {
+            check_hidden_singles(sudoku, row_cells(row), nb, queue);
+            check_hidden_singles(sudoku, col_cells(col), nb, queue);
+            check_hidden_singles(sudoku, box_cells(row, col), nb, queue);
         }
     }
 
     return consistent;
 }
 
-static bool backtracking(Sudoku &sudoku, std::vector<Cell> cache) {
+static bool backtracking(Sudoku &sudoku, std::vector<Cell> remaining_cells) {
 
-    cache.erase(std::remove_if(cache.begin(), cache.end(),
-                  [&](const Cell& c){ return sudoku.get(c.first, c.second) != 0; }),
-                cache.end());
+    remaining_cells.erase(std::remove_if(remaining_cells.begin(), remaining_cells.end(), [&](const Cell& cell){ return sudoku.get(cell.first, cell.second) != 0; }), remaining_cells.end());
 
-    const Optional<Cell> cell = next_cell(sudoku, cache);
+    const Optional<Cell> cell = next_cell(sudoku, remaining_cells);
 
-    bool solved = cache.empty() && !cell.has_value;
+    bool solved = remaining_cells.empty() && !cell.has_value;
 
     if (!solved) {
 
@@ -138,12 +177,12 @@ static bool backtracking(Sudoku &sudoku, std::vector<Cell> cache) {
 
         for (auto value = values.begin(); value != values.end() && !solved; ++value) {
 
-            sudoku.store();
             int nb = 1;
+            sudoku.store();
             sudoku.set(row, col, *value);
 
             if (constraint_propagation(sudoku, row, col, nb)) {
-                solved = backtracking(sudoku, cache);
+                solved = backtracking(sudoku, remaining_cells);
             }
 
             if (!solved) {

@@ -28,6 +28,47 @@ int box(const int row, const int col) {
     return (row / ROWS_BOXES) * COLUMNS / COLUMNS_BOXES + (col / COLUMNS_BOXES);
 }
 
+std::vector<Cell> row_cells(const int row) {
+
+    std::vector<Cell> cells;
+    cells.reserve(COLUMNS);
+
+    for (int col = 0; col < COLUMNS; ++col) {
+        cells.emplace_back(row, col);
+    }
+
+    return cells;
+}
+
+std::vector<Cell> col_cells(const int col) {
+
+    std::vector<Cell> cells;
+    cells.reserve(ROWS);
+
+    for (int row = 0; row < ROWS; ++row) {
+        cells.emplace_back(row, col);
+    }
+
+    return cells;
+}
+
+std::vector<Cell> box_cells(const int row, const int col) {
+
+    std::vector<Cell> cells;
+    cells.reserve(ROWS_BOXES * COLUMNS_BOXES);
+
+    const int br = (row / ROWS_BOXES) * ROWS_BOXES;
+    const int bc = (col / COLUMNS_BOXES) * COLUMNS_BOXES;
+
+    for (int r = 0; r < ROWS_BOXES; ++r) {
+        for (int c = 0; c < COLUMNS_BOXES; ++c) {
+            cells.emplace_back(br + r, bc + c);
+        }
+    }
+
+    return cells;
+}
+
 int find_first(const std::bitset<VALUES> values) {
 
     int first_value = 0;

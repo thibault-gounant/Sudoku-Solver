@@ -20,6 +20,10 @@ int col(int index);
 int index(int row, int col);
 int box(int row, int col);
 
+std::vector<Cell> row_cells(int row);
+std::vector<Cell> col_cells(int col);
+std::vector<Cell> box_cells(int row, int col);
+
 int find_first(std::bitset<VALUES> values);
 
 void read(Sudoku& sudoku, std::string filename);
