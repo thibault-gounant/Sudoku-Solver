@@ -48,8 +48,8 @@ public:
     void store();
     void restore();
 
-    const std::bitset<VALUES> get_values(int row, int col);
-    const std::vector<Cell> get_neighbors(int row, int col);
+    std::bitset<VALUES> get_values(int row, int col);
+    std::vector<Cell> get_neighbors(int row, int col);
 };
 
 void solve(Sudoku &sudoku);

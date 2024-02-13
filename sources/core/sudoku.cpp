@@ -14,15 +14,15 @@ Sudoku::Sudoku() {
 
             std::set<Cell> set;
 
-            for (const auto& cell : row_cells(row)){
+            for (const auto &cell : row_cells(row)){
                 set.insert(cell);
             }
 
-            for (const auto& cell : col_cells(col)){
+            for (const auto &cell : col_cells(col)){
                 set.insert(cell);
             }
 
-            for (const auto& cell : box_cells(row, col)){
+            for (const auto &cell : box_cells(row, col)){
                 set.insert(cell);
             }
 
@@ -79,10 +79,10 @@ void Sudoku::restore() {
     }
 }
 
-const std::bitset<VALUES> Sudoku::get_values(const int row, const int col) {
+std::bitset<VALUES> Sudoku::get_values(const int row, const int col) {
     return grid[index(row, col)] & ~rows[row] & ~cols[col] & ~boxes[box(row, col)];
 }
 
-const std::vector<Cell> Sudoku::get_neighbors(const int row, const int col) {
+std::vector<Cell> Sudoku::get_neighbors(const int row, const int col) {
     return neighbors[index(row, col)];
 }

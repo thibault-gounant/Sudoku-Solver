@@ -6,12 +6,6 @@ void print_usage(char *argv[]) {
     fprintf(stderr, "Usage: %s <input filename> <output filename>\n", argv[0]);
 }
 
-void print_test_result(const bool result, const char* message) {
-    result ?
-    fprintf(stdout, "\033[0;32m✅ PASS\033[0m\t%s", message) :
-    fprintf(stderr, "\033[1;31m❌ FAIL\033[0m\t%s", message);
-}
-
 int row(const int index) {
     return index / COLUMNS;
 }
@@ -84,7 +78,7 @@ int find_first(const std::bitset<VALUES> values) {
     return first_value;
 }
 
-void read(Sudoku& sudoku, const std::string filename) {
+void read(Sudoku &sudoku, const std::string filename) {
 
     std::ifstream file(filename);
     if (file.fail()) {
@@ -108,7 +102,7 @@ void read(Sudoku& sudoku, const std::string filename) {
     file.close();
 }
 
-void write(Sudoku& sudoku, const std::string filename) {
+void write(Sudoku &sudoku, const std::string filename) {
 
     std::ofstream file(filename);
     if (file.fail()) {
@@ -131,7 +125,7 @@ void write(Sudoku& sudoku, const std::string filename) {
     file.close();
 }
 
-bool is_valid(Sudoku& sudoku) {
+bool is_valid(Sudoku &sudoku) {
 
     std::array<std::bitset<VALUES>, ROWS> rows = {};
     std::array<std::bitset<VALUES>, COLUMNS> cols = {};
@@ -159,7 +153,7 @@ bool is_valid(Sudoku& sudoku) {
     return valid;
 }
 
-bool is_solved(Sudoku& sudoku) {
+bool is_solved(Sudoku &sudoku) {
 
     std::array<std::bitset<VALUES>, ROWS> rows = {};
     std::array<std::bitset<VALUES>, COLUMNS> cols = {};
@@ -188,7 +182,7 @@ bool is_solved(Sudoku& sudoku) {
     return solved;
 }
 
-bool is_equal(Sudoku& a, Sudoku& b) {
+bool is_equal(Sudoku &a, Sudoku &b) {
 
     bool equal = true;
 

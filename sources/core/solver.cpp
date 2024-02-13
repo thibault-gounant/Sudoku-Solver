@@ -2,45 +2,10 @@
 #include "utils.h"
 
 #include <algorithm>
+#include <unordered_map>
 #include <queue>
 
-static void check_hidden_singles(Sudoku& sudoku, const std::vector<Cell>& cells, int& nb, std::queue<Cell>& queue) {
-
-    std::array<std::vector<Cell>, VALUES> counts = {};
-
-    for (int i = 0; i < cells.size(); ++i) {
-
-        const int row = cells[i].first;
-        const int col = cells[i].second;
-
-        if (sudoku.get(row, col) == 0) {
-            for (int value = 1; value <= VALUES; ++value) {
-                if (sudoku.get_values(row, col).test(value - 1)) {
-                    counts[value - 1].emplace_back(row, col);
-                }
-            }
-        }
-    }
-
-    for (int value = 1; value <= VALUES; ++value) {
-        if (counts[value - 1].size() == 1) {
-
-            const Cell cell = counts[value - 1][0];
-            const int row = cell.first;
-            const int col = cell.second;
-
-            if (sudoku.get(row, col) == 0) {
-                ++nb;
-                sudoku.store();
-                sudoku.set(row, col, value);
-                queue.push(Cell{row, col});
-            }
-        }
-    }
-}
-
-
-static Optional<Cell> next_cell(Sudoku& sudoku, std::vector<Cell>& remaining_cells) {
+static Optional<Cell> next_cell(Sudoku &sudoku, std::vector<Cell> &remaining_cells) {
 
     int minimum_remaining_values = VALUES + 1;
     int highest_degree = -1;
@@ -114,7 +79,87 @@ static std::vector<int> available_values(Sudoku &sudoku, const int row, const in
     return least_constraining_values;
 }
 
-static bool constraint_propagation(Sudoku& sudoku, const int row, const int col, int& nb) {
+static void check_hidden_singles(Sudoku &sudoku, const std::vector<Cell> &cells, int &nb, std::queue<Cell> &queue) {
+
+    std::array<std::vector<Cell>, VALUES> counts = {};
+
+    for (const Cell cell: cells) {
+
+        const int row = cell.first;
+        const int col = cell.second;
+
+        if (sudoku.get(row, col) == 0) {
+            for (int value = 1; value <= VALUES; ++value) {
+                if (sudoku.get_values(row, col).test(value - 1)) {
+                    counts[value - 1].emplace_back(row, col);
+                }
+            }
+        }
+    }
+
+    for (int value = 1; value <= VALUES; ++value) {
+        if (counts[value - 1].size() == 1) {
+
+            const Cell cell = counts[value - 1][0];
+            const int row = cell.first;
+            const int col = cell.second;
+
+            if (sudoku.get(row, col) == 0) {
+                ++nb;
+                sudoku.store();
+                sudoku.set(row, col, value);
+                queue.push(Cell{row, col});
+            }
+        }
+    }
+}
+
+static void check_naked_pairs(Sudoku &sudoku, const std::vector<Cell> &cells, int &nb, std::queue<Cell> &queue) {
+
+    std::unordered_map<std::bitset<VALUES>, std::vector<Cell>> groups;
+
+    for (const Cell cell: cells) {
+
+        const int row = cell.first;
+        const int col = cell.second;
+
+        if (sudoku.get(row, col) == 0) {
+
+            const std::bitset<VALUES> values = sudoku.get_values(row, col);
+
+            if (values.count() == 2) {
+                groups[values].emplace_back(row, col);
+            }
+        }
+    }
+
+    for (auto const &group : groups) {
+
+        const std::bitset<VALUES> &pair_mask = group.first;
+        const std::vector<Cell> &pair_cells = group.second;
+
+        if (pair_cells.size() == 2) {
+            for (const Cell cell: cells) {
+
+                const int row = cell.first;
+                const int col = cell.second;
+
+                if ((pair_cells[0] != Cell{row, col}) && (pair_cells[1] != Cell{row, col})) {
+                    for (int value = 1; value <= VALUES; ++value) {
+                        if (pair_mask.test(value - 1) && sudoku.get_values(row, col).test(value - 1)) {
+                            ++nb;
+                            sudoku.store();
+                            sudoku.remove(row, col, value);
+                            queue.push(Cell{row, col});
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+static bool constraint_propagation(Sudoku &sudoku, const int row, const int col, int &nb) {
 
     bool consistent = true;
 
@@ -151,9 +196,14 @@ static bool constraint_propagation(Sudoku& sudoku, const int row, const int col,
         }
 
         if (consistent) {
-            check_hidden_singles(sudoku, row_cells(row), nb, queue);
-            check_hidden_singles(sudoku, col_cells(col), nb, queue);
-            check_hidden_singles(sudoku, box_cells(row, col), nb, queue);
+
+            const int r = current.first;
+            const int c = current.second;
+
+            for (std::vector<Cell> const &cells: {row_cells(r), col_cells(c), box_cells(r, c)}) {
+                check_hidden_singles(sudoku, cells, nb, queue);
+                check_naked_pairs(sudoku, cells, nb, queue);
+            }
         }
     }
 
@@ -162,7 +212,7 @@ static bool constraint_propagation(Sudoku& sudoku, const int row, const int col,
 
 static bool backtracking(Sudoku &sudoku, std::vector<Cell> remaining_cells) {
 
-    remaining_cells.erase(std::remove_if(remaining_cells.begin(), remaining_cells.end(), [&](const Cell& cell){ return sudoku.get(cell.first, cell.second) != 0; }), remaining_cells.end());
+    remaining_cells.erase(std::remove_if(remaining_cells.begin(), remaining_cells.end(), [&](const Cell &cell){ return sudoku.get(cell.first, cell.second) != 0; }), remaining_cells.end());
 
     const Optional<Cell> cell = next_cell(sudoku, remaining_cells);
 
